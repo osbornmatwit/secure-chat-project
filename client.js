@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 let { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048
 });
-let ciphertext = crypto.publicEncrypt(publicKey, 'test');
+let ciphertext = crypto.publicEncrypt(publicKey, new TextEncoder().encode('test'));
 // console.log(ciphertext);
 console.log(crypto.privateDecrypt(privateKey, ciphertext).toString())
 // crypto.createCipheriv(crypto.)
@@ -29,12 +29,22 @@ function saveKeyPair(publicKey, privateKey) {
   return [pubExport, privExport];
 }
 
-import io from 'socket.io-client';
+import WebSocket from 'ws';
 
-const ws = io('https://localhost:8080');
-ws.on('encryptedMessage', console.log);
-ws.connect();
+const ws = new WebSocket('ws://localhost:8080');
 
-ws.emit('encryptedMessage', { ciphertext, room: 1234, user: publicKey });
-while (true) { }
-ws.close();
+ws.on('message', (data) => {
+  data.toString();
+});
+
+
+ws.on('open', () => {
+  ws.send('test client message');
+});
+
+import readline from 'node:readline';
+const rl = readline.createInterface(process.stdin, process.stdout);
+
+rl.question('test question?', (answer) => {
+  ws.send(answer);
+});
