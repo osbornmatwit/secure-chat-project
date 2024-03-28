@@ -42,9 +42,58 @@ ws.on('open', () => {
   ws.send('test client message');
 });
 
-import readline from 'node:readline';
-const rl = readline.createInterface(process.stdin, process.stdout);
+import { Direction, QBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget } from '@nodegui/nodegui';
 
-rl.question('test question?', (answer) => {
-  ws.send(answer);
-});
+const win = new QMainWindow();
+win.setWindowTitle('Secure Chat');
+
+const centralWidget = new QWidget();
+
+const rootLayout = new QBoxLayout(Direction.TopToBottom);
+
+centralWidget.setObjectName('myroot');
+centralWidget.setLayout(rootLayout);
+
+const chatLog = new QLabel();
+chatLog.setObjectName('chatlog');
+chatLog.setText('Cool person: Wow so cool!\nGood Person: so amazing!');
+
+function addChatLine(name, message) {
+  let newText = `\n${name}: ${message}`;
+  chatLog.setText(chatLog.text() + newText);
+}
+
+const chatInput = new QLineEdit();
+chatInput.setObjectName('chatinput');
+chatInput.addEventListener('returnPressed', () => {
+  // todo call text processing function instead
+  let value = chatInput.text();
+  console.log(value);
+  addChatLine('Cool Name', value);
+  chatInput.clear();
+})
+
+rootLayout.addWidget(chatLog);
+rootLayout.addWidget(chatInput);
+
+win.setCentralWidget(centralWidget);
+win.setStyleSheet(
+  `
+  #myroot {
+    background-color: #009688;
+    height: '100%';
+    align-items: 'center';
+    justify-content: 'center';
+  }
+  #mylabel {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 1;
+  }
+  `
+);
+
+win.show();
+
+// add win to global object to prevent garbage collection
+global.win = win;

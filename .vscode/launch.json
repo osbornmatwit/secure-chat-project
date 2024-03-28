@@ -5,6 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch client",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "start"
+            ],
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "type": "node",
             "request": "launch",
             "name": "Launch Server",
@@ -13,14 +26,5 @@
             ],
             "program": "${workspaceFolder}\\server.js"
         },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Client",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\client.js"
-        }
     ]
 }
