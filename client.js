@@ -1,46 +1,89 @@
-import crypto from 'node:crypto';
+import crypto, { KeyObject } from 'node:crypto';
+import util from './util';
+
 let { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048
 });
 let ciphertext = crypto.publicEncrypt(publicKey, new TextEncoder().encode('test'));
 // console.log(ciphertext);
 console.log(crypto.privateDecrypt(privateKey, ciphertext).toString())
-// crypto.createCipheriv(crypto.)
 // console.log(saveKeyPair(publicKey, privateKey))
 
-/**
- * RSA keypair
- * @param {KeyObject} publicKey Public key
- * @param {KeyObject} privateKey Private key
- */
-function saveKeyPair(publicKey, privateKey) {
-  let pubExport = publicKey.export({
-    type: 'spki',
-    format: 'pem'
-  });
-
-  let privExport = privateKey.export({
-    type: 'pkcs8',
-    format: 'pem',
-    cipher: 'aes-256-cbc',
-    passphrase: 'top secret'
-  })
-
-  return [pubExport, privExport];
-}
 
 import WebSocket from 'ws';
 
 const ws = new WebSocket('ws://localhost:8080');
 
-ws.on('message', (data) => {
-  data.toString();
-});
+let room = {
+  name: 'coolRoom',
+  // keypair
+  keyPair: ''
+}
 
+let lastRoomRequest = {};
+
+function roomRequest(data) {
+
+}
+
+function acceptRequest() {
+  let request = lastRoomRequest;
+  room.keyPair
+}
+
+function sendRequest(roomName) {
+
+}
+
+function createRoom(name) {
+  room = {
+    name,
+    keyPair: crypto.generateKeyPairSync('rsa',)
+  };
+
+  let data = {
+    name,
+    users: []
+  }
+}
 
 ws.on('open', () => {
-  ws.send('test client message');
+  ws.send({ type: 'publicKey', key: publicKey });
+  ws.send({ type: 'createRoom' })
 });
+
+
+ws.on('message', (data) => {
+  let data = JSON.parse(data.toString());
+  console.log(data);
+  switch (data.type) {
+    case 'encryptedMessage':
+      return handleEncryptedMessage(data);
+    case 'roomSwitch':
+      let decrypted = decryptMessage(data, privateKey);
+      room = decrypted.message
+      return;
+    case 'roomRequest':
+      return roomRequest;
+  }
+});
+
+
+function sendEncryptedMessage(message, encryptKey, signKey) {
+  let ctext = crypto.publicEncrypt(encryptKey, message).toString('base64');
+  let signature = crypto.sign(undefined, message, signKey).toString('base64');
+
+  ws.send({
+    identity: userPk,
+    messageData: ctext,
+    signature,
+  });
+}
+
+function handleEncryptedMessage(data) {
+
+
+}
 
 import { Direction, QBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget } from '@nodegui/nodegui';
 

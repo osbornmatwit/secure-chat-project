@@ -1,8 +1,17 @@
 import { WebSocketServer } from 'ws';
 import WebSocket from 'ws';
 
+import crypto from 'node:crypto';
+
 let rooms = {
-  1234: { users: [], }
+  1234: {
+    // list of public keys
+    users: [],
+    // publicKey to encrypted version of message key
+    keyList: {},
+    // list of encrypted messages
+    messages: []
+  }
 };
 
 let connections = {
