@@ -8,9 +8,9 @@ import WebSocket from 'ws';
 
 const ws = new WebSocket('ws://localhost:8080');
 
-let chatKeys = {
+// symetric key (buffer of random 32 bytes)
+let chatKey;
 
-};
 // nick to data object
 let requests = {}
 
@@ -30,34 +30,30 @@ function registerIdentity() {
 
 // create room when first to join, initialize encryption
 function initRoom() {
-  chatKeys = util.createKeyPair();
-  let textKeys = util.exportKeyPair(chatKeys);
-  // encrypt so that
-  let encryptedPair = crypto.publicEncrypt(publicKey, JSON.stringify(textKeys.privateKey));
+  chatKey = util.createKey();
+  // encrypt 
+  let encryptedKey = crypto.publicEncrypt(publicKey, chatKey);
   util.send(ws, {
     type: mTypes.ROOM_INIT,
-    // publicKey: textKeys.publicKey,
-    keys: encryptedPair.toString('base64')
+    // key: chatKey
+    keys: encryptedKey.toString('base64')
   })
 }
 
 function acceptRequest(nick) {
   let request = requests[nick];
   delete requests[nick];
-  let textKeys = util.exportKeyPair(chatKeys);
-  let encryptedPair = crypto.publicEncrypt(util.importPublicKey(request.publicKey), JSON.stringify(textKeys)).toString('base64');
   util.send(ws, {
     type: mTypes.REQUEST_ACCEPTED,
-    keys: encryptedPair,
+    key: crypto.publicEncrypt(request.publicKey, chatKey).toString('base64'),
     identity: request.publicKey,
     fp: request.fp
   });
 }
 
 function roomJoined(data) {
-  let encryptedPair = Buffer.from(data.keys, 'base64');
-  let keyText = crypto.privateDecrypt(privateKey, encryptedPair);
-  chatKeys = util.importKeyPair(JSON.parse(keyText));
+  let encryptedKey = Buffer.from(data.key, 'base64');
+  chatKey = crypto.privateDecrypt(privateKey, encryptedKey);
 }
 
 ws.on('message', (data) => {
@@ -83,20 +79,20 @@ ws.on('message', (data) => {
 });
 
 
-function sendEncryptedMessage(message, encryptKey, signKey) {
-  let ctext = crypto.publicEncrypt(encryptKey, message).toString('base64');
+function sendEncryptedMessage(message, chatKey, signKey) {
+  let encryptedMessage = util.encryptMessage(chatKey, message);
   let signature = crypto.sign(undefined, message, signKey).toString('base64');
 
   util.send(ws, {
     identity: util.exportPublicKey(publicKey),
-    messageData: ctext,
+    messageData: encryptedMessage,
     signature,
   });
 }
 
 function handleEncryptedMessage(data) {
-  let messBuf = Buffer.from(data.messageData, 'base64');
-  let plainBuf = crypto.privateDecrypt(chatKeys.privateKey, messBuf).toString();
+  let { ciphertext, iv } = data.messageData;
+  let plainBuf = util.decryptMessage(chatKey, iv, ciphertext);
   let identity = Buffer.from(data.identity, 'base64');
   let nick = util.createNickFromKey(identity);
   let signature = Buffer.from(data.signature, 'base64');

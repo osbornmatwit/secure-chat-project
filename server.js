@@ -103,15 +103,16 @@ function onMessage(ws, data) {
     }
   } else if (data.type === mTypes.ROOM_INIT && acceptedUsers.includes(ws.data.fp)) {
     // chatPublicKey = data.publicKey
-    chatKeys[ws.data.fp] = data.keys
+    chatKeys[ws.data.fp] = data.key
   } else if (data.type === mTypes.ENCRYPTED_MESSAGE && acceptedUsers.includes(ws.data.fp)) {
-    messages.push(data.message);
-    sendOther(data);
+    messages.push(data.messageData);
+    sendOther(ws, data);
   } else if (data.type === mTypes.REQUEST_ACCEPTED) {
     if (!pendingUsers.includes(data.fp)) {
       return;
     }
     connections[data.fp].send(data);
+    chatKeys[data.fp] = data.key;
     acceptedUsers.push(data.fp);
     removeFromArray(pendingUsers, data.fp);
     for (let fp of acceptedUsers) {
@@ -130,7 +131,7 @@ function requestEntry(ws) {
         type: mTypes.JOIN_REQUEST,
         nick: ws.data.nick,
         fp: ws.data.fp,
-        publicKey: ws.data.identity
+        publicKey: util.exportPublicKey(ws.data.identity)
       });
     }
   }

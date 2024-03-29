@@ -2,6 +2,8 @@
 import crypto, { KeyObject } from 'node:crypto';
 
 const MODULUS_LENGTH = 4096;
+// for symetric keys
+const ALGORITHM = 'aes-256-ctr';
 
 /// Functions for importing and exporting keys to and from strings
 export function exportKeyPair(data, passphrase) {
@@ -63,17 +65,25 @@ export function createKeyPair() {
   });
 }
 
-/// Handle message encryption
-export function decryptMessage(data, decryptKey, identity) {
-  // message: { identity, message, signature}
-  let message = crypto.privateDecrypt(decryptKey, data.messageData);
-  let verified = crypto.verify(null, message, identity, data.signature);
+export function createKey() {
+  return crypto.randomBytes(32);
+}
 
+export function encryptMessage(key, data) {
+  let iv = crypto.randomBytes(16);
+  let cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let result = cipher.update(data);
   return {
-    message,
-    verified,
-    identity,
-  };
+    iv: iv.toString('hex'),
+    ciphertext: Buffer.concat([result, cipher.final]).toString('hex')
+  }
+}
+
+export function decryptMessage(key, iv, data) {
+  iv = Buffer.from(iv, 'hex');
+  let decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  let result = decipher.update(Buffer.from(data, 'hex'));
+  return Buffer.concat([result, decipher.final()]).toString('utf-8');
 }
 
 // takes exported public key, and creates a nickname from it using fingerprint and slice
