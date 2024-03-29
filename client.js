@@ -62,7 +62,7 @@ function roomJoined(data) {
 
 ws.on('message', (data) => {
   data = JSON.parse(data.toString());
-  // console.log(data);
+  // console.log(data); // add debug flag?
   switch (data.type) {
     case mTypes.ENCRYPTED_MESSAGE:
       return handleEncryptedMessage(data);
