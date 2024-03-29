@@ -14,5 +14,8 @@
     "@nodegui/nodegui": "^0.66.0",
     "ws": "^8.16.0"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
 }
