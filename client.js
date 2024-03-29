@@ -2,9 +2,9 @@ import crypto from 'node:crypto';
 import util from './util.js';
 import mTypes from './messageTypes.js';
 
-let { publicKey, privateKey } = util.createKeyPair();
-
 import WebSocket from 'ws';
+
+let { publicKey, privateKey } = util.createKeyPair();
 
 const ws = new WebSocket('ws://localhost:8080');
 
@@ -13,6 +13,9 @@ let chatKey;
 
 // nick to data object
 let requests = {}
+
+// nickname, currently first 6 characters of fingerprint of public key
+let nick = util.createNickFromKey(publicKey);
 
 ws.on('open', () => {
   registerIdentity();
@@ -47,7 +50,8 @@ function acceptRequest(nick) {
     type: mTypes.REQUEST_ACCEPTED,
     key: crypto.publicEncrypt(request.publicKey, chatKey).toString('base64'),
     identity: request.publicKey,
-    fp: request.fp
+    fp: request.fp,
+    nick,
   });
 }
 
@@ -58,7 +62,7 @@ function roomJoined(data) {
 
 ws.on('message', (data) => {
   data = JSON.parse(data.toString());
-  console.log(data);
+  // console.log(data);
   switch (data.type) {
     case mTypes.ENCRYPTED_MESSAGE:
       return handleEncryptedMessage(data);
@@ -70,7 +74,7 @@ ws.on('message', (data) => {
       printRequest(data.nick);
       // TODO TEST ONLY REMOVE
       acceptRequest(data.nick);
-      sendEncryptedMessage('hi there ' + data.nick, privateKey, publicKey);
+      sendEncryptedMessage('hi there ' + data.nick);
       return;
     case mTypes.REQUEST_ACCEPTED:
       roomJoined(data);
@@ -79,11 +83,13 @@ ws.on('message', (data) => {
 });
 
 
-function sendEncryptedMessage(message, chatKey, signKey) {
+function sendEncryptedMessage(message) {
+
   let encryptedMessage = util.encryptMessage(chatKey, message);
-  let signature = crypto.sign(undefined, message, signKey).toString('base64');
+  let signature = crypto.sign(null, message, privateKey).toString('base64');
 
   util.send(ws, {
+    type: mTypes.ENCRYPTED_MESSAGE,
     identity: util.exportPublicKey(publicKey),
     messageData: encryptedMessage,
     signature,
@@ -93,10 +99,9 @@ function sendEncryptedMessage(message, chatKey, signKey) {
 function handleEncryptedMessage(data) {
   let { ciphertext, iv } = data.messageData;
   let plainBuf = util.decryptMessage(chatKey, iv, ciphertext);
-  let identity = Buffer.from(data.identity, 'base64');
-  let nick = util.createNickFromKey(identity);
+  let nick = util.createNickFromKey(data.identity);
   let signature = Buffer.from(data.signature, 'base64');
-  if (!crypto.verify(null, plainBuf, identity, signature)) {
+  if (!crypto.verify(null, plainBuf, data.identity, signature)) {
     addChatLine('WARN', 'Following message signature does not match public key')
   }
   addChatLine(nick, plainBuf);
@@ -129,8 +134,12 @@ chatInput.setObjectName('chatinput');
 chatInput.addEventListener('returnPressed', () => {
   // todo call text processing function instead
   let value = chatInput.text();
-  console.log(value);
-  addChatLine('Cool Name', value);
+  addChatLine(nick + ' (self)', value);
+  if (chatKey == undefined) {
+    centralWidget.setInlineStyle('background-color: #AA1111;')
+    return;
+  }
+  sendEncryptedMessage(value);
   chatInput.clear();
 })
 

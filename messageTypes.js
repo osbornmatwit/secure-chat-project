@@ -19,7 +19,7 @@ export default {
   // if you want keys or chat log, send those requests
   REJOINED: 'rejoined',
   // send chat keys to client, or requesting from server
-  CHAT_KEYS: 'chatKeys',
+  CHAT_KEY: 'chatKey',
   // send encrypted log of chats, or requesting from server
   CHAT_LOG: 'chatLog'
 }

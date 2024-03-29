@@ -75,7 +75,7 @@ export function encryptMessage(key, data) {
   let result = cipher.update(data);
   return {
     iv: iv.toString('hex'),
-    ciphertext: Buffer.concat([result, cipher.final]).toString('hex')
+    ciphertext: Buffer.concat([result, cipher.final()]).toString('hex')
   }
 }
 
@@ -99,6 +99,7 @@ export function removeFromArray(array, item) {
 }
 
 export function send(ws, data) {
+  if (ws == undefined) return;
   ws.send(JSON.stringify(data));
 }
 
