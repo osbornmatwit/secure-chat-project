@@ -74,7 +74,6 @@ ws.on('message', (data) => {
     case mTypes.JOIN_REQUEST:
       requests[data.nick] = data;
       printRequest(data.nick);
-      sendEncryptedMessage('hi there ' + data.nick);
       return;
     case mTypes.REQUEST_ACCEPTED:
       roomJoined(data);
