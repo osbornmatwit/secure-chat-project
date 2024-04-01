@@ -33,6 +33,7 @@ function registerIdentity() {
 
 // create room when first to join, initialize encryption
 function initRoom() {
+  addChatLine('SYSTEM', 'Initializing chat encryption.');
   chatKey = util.createKey();
   // encrypt 
   let encryptedKey = crypto.publicEncrypt(publicKey, chatKey);
@@ -58,6 +59,7 @@ function acceptRequest(nick) {
 function roomJoined(data) {
   let encryptedKey = Buffer.from(data.key, 'base64');
   chatKey = crypto.privateDecrypt(privateKey, encryptedKey);
+  centralWidget.setInlineStyle('');
 }
 
 ws.on('message', (data) => {
@@ -72,13 +74,13 @@ ws.on('message', (data) => {
     case mTypes.JOIN_REQUEST:
       requests[data.nick] = data;
       printRequest(data.nick);
-      // TODO TEST ONLY REMOVE
-      acceptRequest(data.nick);
       sendEncryptedMessage('hi there ' + data.nick);
       return;
     case mTypes.REQUEST_ACCEPTED:
       roomJoined(data);
       return;
+    case mTypes.JOINED:
+      addChatLine('SYSTEM', `User ${data.nick} joined. Welcome!`);
   }
 });
 
@@ -127,19 +129,23 @@ centralWidget.setLayout(rootLayout);
 
 const chatLog = new QLabel();
 chatLog.setObjectName('chatlog');
-chatLog.setText('Cool person: Wow so cool!\nGood Person: so amazing!');
+chatLog.setText('Welcome to the secure chat! If a user has already joined, you must wait to be accepted.');
 
 const chatInput = new QLineEdit();
 chatInput.setObjectName('chatinput');
 chatInput.addEventListener('returnPressed', () => {
-  // todo call text processing function instead
   let value = chatInput.text();
   addChatLine(nick + ' (self)', value);
   if (chatKey == undefined) {
     centralWidget.setInlineStyle('background-color: #AA1111;')
     return;
   }
-  sendEncryptedMessage(value);
+  if (value.startsWith('/accept ')) {
+    let acceptedNick = value.split(' ')[1]
+    acceptRequest(acceptedNick)
+  } else {
+    sendEncryptedMessage(value);
+  }
   chatInput.clear();
 })
 
